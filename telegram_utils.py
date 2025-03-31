@@ -20,7 +20,7 @@ def send_alerts_to_telegram(alerts):
 
                 caption = (
                     f"💹 <b>Ticker:</b> #{ticker}\n"
-                    f"🧠 <b>Algorithm:</b> #{algo_name}\n"
+                    f"🧠 <b>Algorithm:</b> {algo_name}\n"
                     f"--------------------------------\n"
                     f"📈 <b>RSI (14):</b> {rsi}\n"
                     f"📊 <b>Volume:</b> {volume}k\n"
@@ -38,7 +38,7 @@ def send_alerts_to_telegram(alerts):
                 print(f"❌ {ticker} xatolik: {e}")
                 fallback_msg = (
                     f"💹 <b>Ticker:</b> #{ticker}\n"
-                    f"🧠 <b>Algorithm:</b> #{algo_name}\n"
+                    f"🧠 <b>Algorithm:</b> {algo_name}\n"
                     f"⚠️ Ma’lumot olishda xatolik yuz berdi.\n"
                     f"<a href='https://www.tradingview.com/chart/?symbol={tv_symbol}'>TradingView</a>"
                 )
