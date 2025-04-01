@@ -7,6 +7,7 @@ from stock_analysis import get_stock_info, calculate_support_resistance_from_ran
 from chart_utils import tradingview_chart_only_screenshot
 from utils import get_tradingview_symbol
 from config import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+from fundamental_analysis import get_fundamental_analysis
 
 
 def send_alerts_to_telegram(alerts):
@@ -25,6 +26,10 @@ def send_alerts_to_telegram(alerts):
                 price, rsi, volume = get_stock_info(ticker)
                 support, resistance = calculate_support_resistance_from_range(ticker)
                 image_path = tradingview_chart_only_screenshot(ticker)
+                # Fundamental tahlil
+                fundamental_evals, fundamental_summary = get_fundamental_analysis(ticker)
+                # Baholarni Telegram formatda tayyorlash
+                details = "\n".join(fundamental_evals.values())
 
                 caption = (
                     f"💹 <b>Ticker:</b> #{ticker}\n"
@@ -35,7 +40,10 @@ def send_alerts_to_telegram(alerts):
                     f"--------------------------------\n"
                     f"🔽 <b>Resistance Zone:</b> ${resistance}\n"
                     f"💵 <b>Price:</b> ${price:.2f}\n"
-                    f"🔼 <b>Support Zone:</b> ${support}\n\n"
+                    f"🔼 <b>Support Zone:</b> ${support}\n"
+                    f"--------------------------------\n"
+                    f"{fundamental_summary}\n"
+                    f"{details}\n\n"
                     f"🕒 <b>Time:</b> {now}\n\n"
                     f"<a href='https://www.tradingview.com/chart/?symbol={tv_symbol}'>TradingView</a>"
                 )
@@ -72,12 +80,15 @@ def send_alerts_to_telegram(alerts):
                     f"💹 <b>Ticker:</b> #{ticker}\n"
                     f"🧠 <b>Algorithm:</b> {algo_name}\n"
                     f"--------------------------------\n"
-                    f"📈 <b>RSI (14):</b> {rsi_display}\n"
-                    f"📊 <b>Volume:</b> {vol_display}\n"
+                    f"📈 <b>RSI (14):</b> {rsi}\n"
+                    f"📊 <b>Volume:</b> {volume}k\n"
                     f"--------------------------------\n"
-                    f"🔽 <b>Resistance Zone:</b> ${resist_display}\n"
-                    f"💵 <b>Price:</b> {price_display}\n"
-                    f"🔼 <b>Support Zone:</b> ${support_display}\n\n"
+                    f"🔽 <b>Resistance Zone:</b> ${resistance}\n"
+                    f"💵 <b>Price:</b> ${price:.2f}\n"
+                    f"🔼 <b>Support Zone:</b> ${support}\n"
+                    f"--------------------------------\n"
+                    f"{fundamental_summary}\n"
+                    f"{details}\n\n"
                     f"🕒 <b>Time:</b> {now}\n\n"
                     f"⚠️ Grafik mavjud emas, <a href='https://www.tradingview.com/chart/?symbol={tv_symbol}'>TradingView</a>"
                 )
