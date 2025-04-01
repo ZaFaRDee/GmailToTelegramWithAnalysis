@@ -8,6 +8,7 @@ from chart_utils import tradingview_chart_only_screenshot
 from utils import get_tradingview_symbol
 from config import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 from fundamental_analysis import get_fundamental_analysis
+from finviz_analysis import get_finviz_analysis
 
 
 def send_alerts_to_telegram(alerts):
@@ -30,6 +31,9 @@ def send_alerts_to_telegram(alerts):
                 fundamental_evals, fundamental_summary = get_fundamental_analysis(ticker)
                 # Baholarni Telegram formatda tayyorlash
                 details = "\n".join(fundamental_evals.values())
+                # Fundamental tahlil (Finviz orqali)
+                finviz_evals, finviz_summary = get_finviz_analysis(ticker)
+                finviz_details = "\n".join(finviz_evals.values())
 
                 caption = (
                     f"💹 <b>Ticker:</b> #{ticker}\n"
@@ -42,8 +46,10 @@ def send_alerts_to_telegram(alerts):
                     f"💵 <b>Price:</b> ${price:.2f}\n"
                     f"🔼 <b>Support Zone:</b> ${support}\n"
                     f"--------------------------------\n"
-                    f"{fundamental_summary}\n"
-                    f"{details}\n\n"
+                    # f"{fundamental_summary}\n"
+                    # f"{details}\n\n"
+                    f"{finviz_summary}\n"
+                    f"{finviz_details}\n\n"
                     f"🕒 <b>Time:</b> {now}\n\n"
                     f"<a href='https://www.tradingview.com/chart/?symbol={tv_symbol}'>TradingView</a>"
                 )
@@ -87,8 +93,10 @@ def send_alerts_to_telegram(alerts):
                     f"💵 <b>Price:</b> ${price:.2f}\n"
                     f"🔼 <b>Support Zone:</b> ${support}\n"
                     f"--------------------------------\n"
-                    f"{fundamental_summary}\n"
-                    f"{details}\n\n"
+                    # f"{fundamental_summary}\n"
+                    # f"{details}\n\n"
+                    f"{finviz_summary}\n"
+                    f"{finviz_details}\n\n"
                     f"🕒 <b>Time:</b> {now}\n\n"
                     f"⚠️ Grafik mavjud emas, <a href='https://www.tradingview.com/chart/?symbol={tv_symbol}'>TradingView</a>"
                 )
