@@ -10,8 +10,7 @@ EVALUATED_KEYS = [
 ]
 
 DISPLAY_ONLY_KEYS = [
-    "Market Cap", "Avg Volume", "Target Price",
-    "Earnings", "Call Volume", "Put Volume"
+    "Market Cap", "Avg Volume", "Target Price", "Earnings"
 ]
 
 ICON_MAP = {
@@ -19,8 +18,6 @@ ICON_MAP = {
     "Avg Volume": "📊",
     "Target Price": "🎯",
     "Earnings": "📅",
-    "Call Volume": "📈",
-    "Put Volume": "📉"
 }
 
 GRADE_ICONS = {
@@ -102,6 +99,7 @@ def get_finviz_fundamentals(ticker):
     display = []
     grade_counts = {"good": 0, "average": 0, "bad": 0}
     rsi_finviz = data.get("RSI (14)", "?")
+    volume = data.get("Volume", "?")
 
     for key in EVALUATED_KEYS:
         raw = data.get(key, "?")
@@ -125,5 +123,5 @@ def get_finviz_fundamentals(ticker):
         display.append(f"{icon} <b>{name}:</b> {formatted}")
 
     summary = f"📊 <b>Fundamental Score:</b> {grade_counts['good']} / {grade_counts['average'] + grade_counts['bad'] + grade_counts['good']}"
-    return summary, evaluated, display, rsi_finviz
+    return summary, evaluated, display, rsi_finviz, volume
 

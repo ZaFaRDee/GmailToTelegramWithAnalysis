@@ -8,6 +8,7 @@ from chart_utils import tradingview_chart_only_screenshot
 from utils import get_tradingview_symbol
 from config import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 from finviz_analysis import get_finviz_fundamentals
+from barchart_utils import get_put_call_volume
 
 
 def send_alerts_to_telegram(alerts):
@@ -23,19 +24,29 @@ def send_alerts_to_telegram(alerts):
 
             try:
                 # Asosiy ma'lumotlar yfinance
-                price, rsi, volume = get_stock_info(ticker)
+                price, rsi, yf_volume = get_stock_info(ticker)
                 support, resistance = calculate_support_resistance_from_range(ticker)
                 image_path = tradingview_chart_only_screenshot(ticker)
+
                 # Fundamental tahlil (Finviz orqali)
-                summary, evaluated_lines, display_lines, rsi_finviz = get_finviz_fundamentals(ticker)
+                summary, evaluated_lines, display_lines, rsi_finviz, volume = get_finviz_fundamentals(ticker)
+
+                # Put va Call Volume (Barchart orqali)
+                volume_data = get_put_call_volume(ticker)
+                call_vol = volume_data.get("Call Volume", "?")
+                put_vol = volume_data.get("Put Volume", "?")
+
+                if call_vol != "?":
+                    call_vol = f"{int(call_vol):,}"
+                if put_vol != "?":
+                    put_vol = f"{int(put_vol):,}"
 
                 caption = (
                     f"💹 <b>Ticker:</b> #{ticker}\n"
                     f"🧠 <b>Algorithm:</b> {algo_name}\n"
                     f"--------------------------------\n"
-                    # f"📈 <b>RSI (14):</b> {rsi}\n"
                     f"📈 <b>RSI (14):</b> {rsi_finviz}\n"
-                    f"📊 <b>Volume:</b> {volume}k\n"
+                    f"📊 <b>Volume:</b> {yf_volume}k\n"
                     f"--------------------------------\n"
                     f"🔽 <b>Resistance Zone:</b> ${resistance}\n"
                     f"💵 <b>Price:</b> ${price:.2f}\n"
@@ -43,6 +54,8 @@ def send_alerts_to_telegram(alerts):
                     f"--------------------------------\n"
                     f"📊 <b>Fundamental Info:</b>\n"
                     f"{chr(10).join(display_lines)}\n"
+                    f"📉 <b>Put Volume:</b> {put_vol}\n"
+                    f"📈 <b>Call Volume:</b> {call_vol}\n"
                     f"--------------------------------\n"
                     f"{summary}\n"
                     f"{chr(10).join(evaluated_lines)}\n\n"
@@ -82,7 +95,6 @@ def send_alerts_to_telegram(alerts):
                     f"💹 <b>Ticker:</b> #{ticker}\n"
                     f"🧠 <b>Algorithm:</b> {algo_name}\n"
                     f"--------------------------------\n"
-                    # f"📈 <b>RSI (14):</b> {rsi}\n"
                     f"📈 <b>RSI (14):</b> {rsi_finviz}\n"
                     f"📊 <b>Volume:</b> {volume}k\n"
                     f"--------------------------------\n"
