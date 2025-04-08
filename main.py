@@ -1,39 +1,63 @@
 # main.py
 
 import time
-from telegram.ext import Updater, CommandHandler
-from config import TELEGRAM_BOT_TOKEN
+from telegram import Update
+from telegram.ext import (
+    Updater, CommandHandler, CallbackContext,
+    MessageHandler, Filters
+)
+from config import TELEGRAM_BOT_TOKEN, ADMIN_ID
 from gmail_utils import get_new_alerts
 from telegram_utils import send_alerts_to_telegram
 from admin_commands import (
-    ping, status, uptime, info, pause, resume,
-    setinterval, lastalert, version, help_command,
     is_monitoring_paused, get_interval, set_last_alert_time
 )
+from bot.role_handler import role_handler
+from bot.admin_actions import handle_admin_command
+from bot.back_handler import handle_back
+import sys, os
+
+# Global holat: tanlangan foydalanuvchi rollari
+user_roles = {}
+
+def start(update: Update, context: CallbackContext):
+    keyboard = [["👑 Admin", "👤 User"]]
+    from telegram import ReplyKeyboardMarkup
+    update.message.reply_text(
+        "Iltimos, rolingizni tanlang:",
+        reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    )
+
+
+def check_for_restart_signal():
+    return os.path.exists("RESTART_SIGNAL")
+
+def clear_restart_signal():
+    if os.path.exists("RESTART_SIGNAL"):
+        os.remove("RESTART_SIGNAL")
 
 def main():
     print("✅ Bot ishga tushdi...")
 
-    # Telegram Updater yaratamiz
     updater = Updater(token=TELEGRAM_BOT_TOKEN, use_context=True)
     dispatcher = updater.dispatcher
 
-    # === Admin komandalarni ro'yxatdan o'tkazamiz ===
-    dispatcher.add_handler(CommandHandler("ping", ping))
-    dispatcher.add_handler(CommandHandler("status", status))
-    dispatcher.add_handler(CommandHandler("uptime", uptime))
-    dispatcher.add_handler(CommandHandler("info", info))
-    dispatcher.add_handler(CommandHandler("pause", pause))
-    dispatcher.add_handler(CommandHandler("resume", resume))
-    dispatcher.add_handler(CommandHandler("setinterval", setinterval))
-    dispatcher.add_handler(CommandHandler("lastalert", lastalert))
-    dispatcher.add_handler(CommandHandler("version", version))
-    dispatcher.add_handler(CommandHandler("help", help_command))
+    # /start bosilganda rol tanlash menyusi chiqadi
+    dispatcher.add_handler(CommandHandler("start", start))
 
-    # Botni komandalar uchun ishga tushuramiz
+    # Roldan keyingi tugma menyuni ko‘rsatish
+    dispatcher.add_handler(MessageHandler(Filters.regex("^(👑 Admin|👤 User)$"), role_handler))
+    dispatcher.add_handler(MessageHandler(Filters.text & Filters.regex("^.*"), handle_admin_command))
+    dispatcher.add_handler(MessageHandler(Filters.text("🔙 Ortga"), handle_back))
+
     updater.start_polling()
 
-    # === Monitoring sikli (Gmail tekshiradi) ===
+    if check_for_restart_signal():
+        print("♻️ Restart signal topildi, qayta ishga tushiryapman...")
+        clear_restart_signal()
+        os.execv(sys.executable, ['python'] + sys.argv)
+
+    # === Monitoring sikli ===
     while True:
         try:
             if not is_monitoring_paused():
@@ -53,7 +77,6 @@ def main():
         time.sleep(get_interval())
 
     updater.idle()
-
 
 if __name__ == '__main__':
     main()

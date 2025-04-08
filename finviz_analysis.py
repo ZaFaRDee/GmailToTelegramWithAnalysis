@@ -78,14 +78,16 @@ def evaluate_grade(metric, value, sector):
 def format_large_number(value):
     try:
         num = float(value)
-        if abs(num) >= 1_000_000_000:
-            return f"{num / 1_000_000_000:.1f}B"
-        elif abs(num) >= 1_000_000:
-            return f"{num / 1_000_000:.1f}M"
-        elif abs(num) >= 1_000:
-            return f"{num / 1_000:.1f}k"
+        sign = "-" if num < 0 else ""
+        abs_num = abs(num)
+        if abs_num >= 1_000_000_000:
+            return f"{sign}{abs_num / 1_000_000_000:.1f}B"
+        elif abs_num >= 1_000_000:
+            return f"{sign}{abs_num / 1_000_000:.1f}M"
+        elif abs_num >= 1_000:
+            return f"{sign}{abs_num / 1_000:.1f}k"
         else:
-            return f"{num:.2f}"
+            return f"{sign}{abs_num:.2f}"
     except:
         return value
 

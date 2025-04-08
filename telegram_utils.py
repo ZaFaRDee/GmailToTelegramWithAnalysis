@@ -9,6 +9,7 @@ from utils import get_tradingview_symbol
 from config import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 from finviz_analysis import get_finviz_fundamentals
 from barchart_utils import get_put_call_volume
+from sentimental.news_sentiment import get_sentiment_summary
 
 
 def send_alerts_to_telegram(alerts):
@@ -41,6 +42,9 @@ def send_alerts_to_telegram(alerts):
                 if put_vol != "?":
                     put_vol = f"{int(put_vol):,}"
 
+                # Sentimental Analysis
+                sentiment_block = get_sentiment_summary(ticker)
+
                 caption = (
                     f"💹 <b>Ticker:</b> #{ticker}\n"
                     f"🧠 <b>Algorithm:</b> {algo_name}\n"
@@ -58,7 +62,9 @@ def send_alerts_to_telegram(alerts):
                     f"📈 <b>Call Volume:</b> {call_vol}\n"
                     f"--------------------------------\n"
                     f"{summary}\n"
-                    f"{chr(10).join(evaluated_lines)}\n\n"
+                    f"{chr(10).join(evaluated_lines)}\n"
+                    f"--------------------------------\n"
+                    f"{sentiment_block}\n\n"
                     f"🕒 <b>Time:</b> {now}\n\n"
                     f"<a href='https://www.tradingview.com/chart/?symbol={tv_symbol}'>TradingView</a>"
                 )

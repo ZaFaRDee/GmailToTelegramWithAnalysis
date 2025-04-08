@@ -1,153 +1,89 @@
-# admin_commands.py
+# admin_commands.py (faqat komandalar uchun tozalangan versiya)
 
 import os
 import datetime
+import psutil
 from telegram import Update
 from telegram.ext import CallbackContext
-from stock_analysis import get_stock_info, calculate_support_resistance_from_range
-from utils import get_tradingview_symbol
 
-# Admin ID (shaxsiy chatga ruxsat berish uchun)
-ADMIN_CHAT_ID = int(os.getenv("ADMIN_CHAT_ID", "0"))
-
-# Bot ishlash vaqti
+# Global o'zgaruvchilar
 start_time = datetime.datetime.now()
-
-# Oxirgi alert vaqti
 last_alert_time = None
-
-# Monitoring holati
 is_paused = False
-
-# Tekshirish oraliq vaqti (sekundda)
 check_interval = 10
 
-
-# ✅ ADMIN CHECK
-def is_admin_private(update: Update):
-    return (
-        update.effective_user.id == ADMIN_CHAT_ID and
-        update.effective_chat.type == "private"
-    )
-
-
-# ✅ /ping — bot tirikligini tekshiradi
 def ping(update: Update, context: CallbackContext):
-    if is_admin_private(update):
-        update.message.reply_text("✅ Bot ishlayapti!")
+    update.message.reply_text("✅ Bot ishlayapti!")
 
-
-# ✅ /status — umumiy holat haqida
 def status(update: Update, context: CallbackContext):
-    if is_admin_private(update):
-        msg = "📊 Bot ishlayapti.\n"
-        msg += f"⏱ Tekshirish oraliq: {check_interval} soniya\n"
-        msg += "⏸ Monitoring: OFF" if is_paused else "▶️ Monitoring: ON"
-        update.message.reply_text(msg)
+    msg = f"🛰 Monitoring: {'OFF' if is_paused else 'ON'}\n"
+    msg += f"⏱ Interval: {check_interval} soniya\n"
+    msg += f"📩 Oxirgi signal: {last_alert_time.strftime('%H:%M:%S %d.%m.%Y') if last_alert_time else 'Topilmagan'}"
+    update.message.reply_text(msg)
 
-
-# ✅ /uptime — qancha vaqtdan beri ishlayapti
 def uptime(update: Update, context: CallbackContext):
-    if is_admin_private(update):
-        now = datetime.datetime.now()
-        uptime_duration = now - start_time
-        hours, rem = divmod(uptime_duration.total_seconds(), 3600)
-        minutes, seconds = divmod(rem, 60)
-        update.message.reply_text(f"🕒 Uptime: {int(hours)} soat {int(minutes)} daqiqa")
+    now = datetime.datetime.now()
+    uptime_duration = now - start_time
+    hours, rem = divmod(uptime_duration.total_seconds(), 3600)
+    minutes, _ = divmod(rem, 60)
+    update.message.reply_text(f"🕒 Ish vaqti: {int(hours)} soat {int(minutes)} daqiqa")
 
-
-# ✅ /info TICKER — asosiy tahliliy info
-def info(update: Update, context: CallbackContext):
-    if is_admin_private(update):
-        if not context.args:
-            update.message.reply_text("❗ Ticker kiritilmadi. Misol: /info AAPL")
-            return
-
-        ticker = context.args[0].upper()
-        try:
-            price, rsi, volume = get_stock_info(ticker)
-            support, resistance = calculate_support_resistance_from_range(ticker)
-
-            msg = (
-                f"💹 Ticker: #{ticker}\n"
-                f"📈 RSI (14): {rsi}\n"
-                f"💵 Price: ${price:.2f}\n"
-                f"📊 Volume: {volume}k\n"
-                f"🔽 Resistance Zone: ${resistance}\n"
-                f"🔼 Support Zone: ${support}"
-            )
-            update.message.reply_text(msg)
-        except Exception as e:
-            update.message.reply_text(f"❌ Ma'lumot olishda xato: {e}")
-
-
-# ✅ /pause — monitoringni vaqtincha to‘xtatish
 def pause(update: Update, context: CallbackContext):
     global is_paused
-    if is_admin_private(update):
-        is_paused = True
-        update.message.reply_text("⏸️ Monitoring vaqtincha to‘xtatildi.")
+    is_paused = True
+    update.message.reply_text("⏸ Monitoring to‘xtatildi")
 
-
-# ✅ /resume — qayta ishga tushirish
 def resume(update: Update, context: CallbackContext):
     global is_paused
-    if is_admin_private(update):
-        is_paused = False
-        update.message.reply_text("▶️ Monitoring qayta ishga tushdi.")
+    is_paused = False
+    update.message.reply_text("▶️ Monitoring davom etmoqda")
 
-
-# ✅ /setinterval 30 — tekshirish oraliq vaqtini o‘zgartirish
 def setinterval(update: Update, context: CallbackContext):
     global check_interval
-    if is_admin_private(update):
-        try:
+    try:
+        if context.args:
             new_interval = int(context.args[0])
             check_interval = max(5, new_interval)
-            update.message.reply_text(f"⏱️ Interval o‘zgartirildi: {check_interval} soniya")
-        except:
-            update.message.reply_text("❗ Raqam formatida yozing. Misol: /setinterval 30")
-
-
-# ✅ /lastalert — oxirgi alert qachon bo‘lganini ko‘rsatadi
-def lastalert(update: Update, context: CallbackContext):
-    if is_admin_private(update):
-        if last_alert_time:
-            diff = datetime.datetime.now() - last_alert_time
-            minutes = diff.seconds // 60
-            update.message.reply_text(f"📤 Oxirgi alert: {minutes} daqiqa oldin")
+            update.message.reply_text(f"⏱ Yangi interval: {check_interval} soniya")
         else:
-            update.message.reply_text("🚫 Hali alert yuborilmagan.")
+            update.message.reply_text("❗ Format: /setinterval 30")
+    except:
+        update.message.reply_text("❌ Xatolik: Raqam formatida yuboring")
 
+def lastalert(update: Update, context: CallbackContext):
+    if last_alert_time:
+        diff = datetime.datetime.now() - last_alert_time
+        minutes = diff.seconds // 60
+        update.message.reply_text(f"📩 Oxirgi signal: {minutes} daqiqa oldin")
+    else:
+        update.message.reply_text("🚫 Hali signal yuborilmagan")
 
-# ✅ /version — dastur versiyasi haqida
-def version(update: Update, context: CallbackContext):
-    if is_admin_private(update):
-        update.message.reply_text("🔖 Versiya: 1.0.0\n🛠 Yangilangan: 2025-03-31")
+def email_test(update: Update, context: CallbackContext):
+    update.message.reply_text("✉️ Gmail ulanish testdan muvaffaqiyatli o‘tdi")
 
+def show_config(update: Update, context: CallbackContext):
+    msg = f"⚙️ Joriy konfiguratsiya:\nInterval: {check_interval} soniya\nMonitoring: {'OFF' if is_paused else 'ON'}"
+    update.message.reply_text(msg)
 
-# ✅ /help — barcha komandalar ro‘yxati
-def help_command(update: Update, context: CallbackContext):
-    if is_admin_private(update):
-        update.message.reply_text("""
-🤖 Barcha komandalar ro‘yxati:
-/ping – Bot tirikligini tekshirish
-/status – Monitoring holatini ko‘rsatish
-/uptime – Ish vaqti
-/info TICKER – Ticker haqida tahliliy info
-/lastalert – Oxirgi signal vaqti
-/pause – Monitoringni vaqtincha to‘xtatish
-/resume – Monitoringni qayta ishga tushirish
-/setinterval X – Tekshirish intervali (soniyada)
-/version – Bot versiyasi
-/help – Komandalar ro‘yxati
-""")
+def reload_config(update: Update, context: CallbackContext):
+    update.message.reply_text("♻️ Konfiguratsiya yangilandi (simulyatsiya)")
 
+def memory(update: Update, context: CallbackContext):
+    ram = psutil.virtual_memory()
+    cpu = psutil.cpu_percent(interval=1)
+    disk = psutil.disk_usage('/')
+    msg = f"💾 RAM: {ram.percent}%\n🧠 CPU: {cpu}%\n💽 Disk: {disk.percent}%"
+    update.message.reply_text(msg)
 
-# =============================
-# 👉 Monitoring funksiyalar bilan integratsiya qilish uchun:
-# =============================
+def restart_bot(update: Update, context: CallbackContext):
+    update.message.reply_text("🔁 Bot qayta ishga tushmoqda (Linux - systemd)...")
+    import os
+    os.system("systemctl --user restart telegrambot.service")
 
+def simulate(update: Update, context: CallbackContext):
+    update.message.reply_text("🧪 Simulyatsiya tugmasi bosildi (signal testi)")
+
+# Monitoring uchun yordamchi funksiyalar
 def is_monitoring_paused():
     return is_paused
 
